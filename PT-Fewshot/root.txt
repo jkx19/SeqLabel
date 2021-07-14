@@ -1,0 +1,182 @@
+2021-07-07 12:06:02,332 - INFO - cli - Parameters: Namespace(adam_epsilon=1e-08, alpha=0.9999, cache_dir='', data_dir='../FewGLUE_32dev/BoolQ', dev32_examples=-1, do_eval=True, do_train=True, embed_size=128, eval_every_step=20, eval_examples=-1, eval_set='dev', learning_rate=0.0001, logging_steps=50, max_grad_norm=1.0, model_name_or_path='albert-xxlarge-v2', model_type='albert', no_cuda=False, output_dir='../out/FewGLUE_32dev/boolq', overwrite_output_dir=True, pattern_ids=[1], pet_gradient_accumulation_steps=1, pet_max_seq_length=256, pet_max_steps=250, pet_num_train_epochs=3, pet_per_gpu_eval_batch_size=8, pet_per_gpu_train_batch_size=2, pet_repetitions=3, prompt_encoder_type='lstm', seed=42, split_examples_evenly=False, task_name='boolq', train_examples=-1, warmup_steps=0, weight_decay=0.1)
+2021-07-07 12:06:03,268 - INFO - task_processors - Creating features from dataset file at ../FewGLUE_32dev/BoolQ (num_examples=-1, set_type=train)
+2021-07-07 12:06:03,271 - INFO - task_processors - Returning 32 train examples with label dist.: [('False', 14), ('True', 18)]
+2021-07-07 12:06:03,271 - INFO - task_processors - Creating features from dataset file at ../FewGLUE_32dev/BoolQ (num_examples=-1, set_type=dev)
+2021-07-07 12:06:03,306 - INFO - task_processors - Returning 3270 dev examples with label dist.: [('False', 1237), ('True', 2033)]
+2021-07-07 12:06:03,306 - INFO - task_processors - Creating features from dataset file at ../FewGLUE_32dev/BoolQ (num_examples=-1, set_type=dev32)
+2021-07-07 12:06:03,307 - INFO - task_processors - Returning 32 dev32 examples with label dist.: [('True', 19), ('False', 13)]
+2021-07-07 12:06:03,307 - WARNING - modeling - Path ../out/FewGLUE_32dev/boolq/p1-i0 already exists, skipping it...
+2021-07-07 12:06:18,640 - INFO - wrapper - Writing example 0
+2021-07-07 12:06:18,681 - INFO - wrapper - dev32_data performance before training.
+2021-07-07 12:06:18,682 - INFO - wrapper - Writing example 0
+2021-07-07 12:06:44,515 - INFO - wrapper - {'acc': 0.625}
+2021-07-07 12:06:44,516 - INFO - wrapper - eval_data performance before training.
+2021-07-07 12:06:44,516 - INFO - wrapper - Writing example 0
+2021-07-07 12:08:11,291 - INFO - wrapper - {'acc': 0.6749235474006117}
+2021-07-07 12:08:43,949 - INFO - wrapper - Writing example 0
+2021-07-07 12:08:45,119 - INFO - wrapper - Saving trained model at ../out/FewGLUE_32dev/boolq/p1-i1...
+2021-07-07 12:08:45,119 - INFO - wrapper - best_dev32_acc: 0.7500 | best_global_step: 20
+2021-07-07 12:08:45,119 - INFO - wrapper - Saving models.
+2021-07-07 12:08:47,011 - INFO - wrapper - eval_data performance:
+2021-07-07 12:08:47,012 - INFO - wrapper - Writing example 0
+2021-07-07 12:10:13,768 - INFO - wrapper - {'acc': 0.7834862385321101}
+2021-07-07 12:10:44,449 - INFO - wrapper - Writing example 0
+2021-07-07 12:10:45,619 - INFO - wrapper - Saving trained model at ../out/FewGLUE_32dev/boolq/p1-i1...
+2021-07-07 12:10:45,619 - INFO - wrapper - best_dev32_acc: 0.7500 | best_global_step: 40
+2021-07-07 12:10:45,619 - INFO - wrapper - Saving models.
+2021-07-07 12:10:48,054 - INFO - wrapper - eval_data performance:
+2021-07-07 12:10:48,054 - INFO - wrapper - Writing example 0
+2021-07-07 12:12:14,786 - INFO - wrapper - {'acc': 0.7743119266055046}
+2021-07-07 12:12:45,384 - INFO - wrapper - Writing example 0
+2021-07-07 12:12:46,557 - INFO - wrapper - Saving trained model at ../out/FewGLUE_32dev/boolq/p1-i1...
+2021-07-07 12:12:46,557 - INFO - wrapper - best_dev32_acc: 0.7500 | best_global_step: 60
+2021-07-07 12:12:46,557 - INFO - wrapper - Saving models.
+2021-07-07 12:12:48,894 - INFO - wrapper - eval_data performance:
+2021-07-07 12:12:48,895 - INFO - wrapper - Writing example 0
+2021-07-07 12:14:15,644 - INFO - wrapper - {'acc': 0.7737003058103975}
+2021-07-07 12:14:46,336 - INFO - wrapper - Writing example 0
+2021-07-07 12:14:47,505 - INFO - wrapper - Saving trained model at ../out/FewGLUE_32dev/boolq/p1-i1...
+2021-07-07 12:14:47,505 - INFO - wrapper - best_dev32_acc: 0.7500 | best_global_step: 80
+2021-07-07 12:14:47,505 - INFO - wrapper - Saving models.
+2021-07-07 12:14:49,705 - INFO - wrapper - eval_data performance:
+2021-07-07 12:14:49,705 - INFO - wrapper - Writing example 0
+2021-07-07 12:16:16,345 - INFO - wrapper - {'acc': 0.7743119266055046}
+2021-07-07 12:16:46,891 - INFO - wrapper - Writing example 0
+2021-07-07 12:16:48,060 - INFO - wrapper - Saving trained model at ../out/FewGLUE_32dev/boolq/p1-i1...
+2021-07-07 12:16:48,060 - INFO - wrapper - best_dev32_acc: 0.7500 | best_global_step: 100
+2021-07-07 12:16:48,060 - INFO - wrapper - Saving models.
+2021-07-07 12:16:50,538 - INFO - wrapper - eval_data performance:
+2021-07-07 12:16:50,538 - INFO - wrapper - Writing example 0
+2021-07-07 12:18:17,403 - INFO - wrapper - {'acc': 0.7743119266055046}
+2021-07-07 12:18:48,017 - INFO - wrapper - Writing example 0
+2021-07-07 12:18:49,188 - INFO - wrapper - Saving trained model at ../out/FewGLUE_32dev/boolq/p1-i1...
+2021-07-07 12:18:49,188 - INFO - wrapper - best_dev32_acc: 0.7500 | best_global_step: 120
+2021-07-07 12:18:49,188 - INFO - wrapper - Saving models.
+2021-07-07 12:18:51,141 - INFO - wrapper - eval_data performance:
+2021-07-07 12:18:51,142 - INFO - wrapper - Writing example 0
+2021-07-07 12:20:17,891 - INFO - wrapper - {'acc': 0.7746177370030581}
+2021-07-07 12:20:48,464 - INFO - wrapper - Writing example 0
+2021-07-07 12:20:49,630 - INFO - wrapper - Saving trained model at ../out/FewGLUE_32dev/boolq/p1-i1...
+2021-07-07 12:20:49,631 - INFO - wrapper - best_dev32_acc: 0.7500 | best_global_step: 140
+2021-07-07 12:20:49,631 - INFO - wrapper - Saving models.
+2021-07-07 12:20:51,888 - INFO - wrapper - eval_data performance:
+2021-07-07 12:20:51,888 - INFO - wrapper - Writing example 0
+2021-07-07 12:22:18,714 - INFO - wrapper - {'acc': 0.7749235474006116}
+2021-07-07 12:22:49,402 - INFO - wrapper - Writing example 0
+2021-07-07 12:22:50,572 - INFO - wrapper - {'acc': 0.71875}
+2021-07-07 12:22:50,572 - INFO - wrapper - 7
+2021-07-07 12:23:21,225 - INFO - wrapper - Writing example 0
+2021-07-07 12:23:22,394 - INFO - wrapper - {'acc': 0.71875}
+2021-07-07 12:23:22,394 - INFO - wrapper - 8
+2021-07-07 12:23:52,954 - INFO - wrapper - Writing example 0
+2021-07-07 12:23:54,125 - INFO - wrapper - {'acc': 0.71875}
+2021-07-07 12:23:54,125 - INFO - wrapper - 9
+2021-07-07 12:24:24,809 - INFO - wrapper - Writing example 0
+2021-07-07 12:24:25,983 - INFO - wrapper - {'acc': 0.71875}
+2021-07-07 12:24:25,984 - INFO - wrapper - 10
+2021-07-07 12:24:44,531 - INFO - wrapper - Writing example 0
+2021-07-07 12:24:45,716 - INFO - modeling - Saving complete
+2021-07-07 12:24:45,717 - INFO - modeling - Starting evaluation...
+2021-07-07 12:25:01,835 - INFO - wrapper - Writing example 0
+2021-07-07 12:26:28,606 - INFO - wrapper - Writing example 0
+2021-07-07 12:26:29,792 - INFO - modeling - --- RESULT (pattern_id=1, iteration=1) ---
+2021-07-07 12:26:29,792 - INFO - modeling - eval_results:
+2021-07-07 12:26:29,792 - INFO - modeling - {'acc': 0.7749235474006116}
+2021-07-07 12:26:29,792 - INFO - modeling - dev32_results:
+2021-07-07 12:26:29,792 - INFO - modeling - {'acc': 0.75}
+2021-07-07 12:26:44,066 - INFO - wrapper - Writing example 0
+2021-07-07 12:26:44,135 - INFO - wrapper - dev32_data performance before training.
+2021-07-07 12:26:44,135 - INFO - wrapper - Writing example 0
+2021-07-07 12:26:45,363 - INFO - wrapper - {'acc': 0.625}
+2021-07-07 12:26:45,363 - INFO - wrapper - eval_data performance before training.
+2021-07-07 12:26:45,364 - INFO - wrapper - Writing example 0
+2021-07-07 12:28:12,132 - INFO - wrapper - {'acc': 0.6764525993883792}
+2021-07-07 12:28:43,984 - INFO - wrapper - Writing example 0
+2021-07-07 12:28:45,154 - INFO - wrapper - Saving trained model at ../out/FewGLUE_32dev/boolq/p1-i2...
+2021-07-07 12:28:45,154 - INFO - wrapper - best_dev32_acc: 0.6250 | best_global_step: 20
+2021-07-07 12:28:45,154 - INFO - wrapper - Saving models.
+2021-07-07 12:28:47,000 - INFO - wrapper - eval_data performance:
+2021-07-07 12:28:47,001 - INFO - wrapper - Writing example 0
+2021-07-07 12:30:13,704 - INFO - wrapper - {'acc': 0.7788990825688074}
+2021-07-07 12:30:44,406 - INFO - wrapper - Writing example 0
+2021-07-07 12:30:45,580 - INFO - wrapper - Saving trained model at ../out/FewGLUE_32dev/boolq/p1-i2...
+2021-07-07 12:30:45,581 - INFO - wrapper - best_dev32_acc: 0.6875 | best_global_step: 40
+2021-07-07 12:30:45,581 - INFO - wrapper - Saving models.
+2021-07-07 12:30:47,807 - INFO - wrapper - eval_data performance:
+2021-07-07 12:30:47,808 - INFO - wrapper - Writing example 0
+2021-07-07 12:32:14,533 - INFO - wrapper - {'acc': 0.7675840978593272}
+2021-07-07 12:32:45,258 - INFO - wrapper - Writing example 0
+2021-07-07 12:32:46,429 - INFO - wrapper - Saving trained model at ../out/FewGLUE_32dev/boolq/p1-i2...
+2021-07-07 12:32:46,429 - INFO - wrapper - best_dev32_acc: 0.6875 | best_global_step: 60
+2021-07-07 12:32:46,429 - INFO - wrapper - Saving models.
+2021-07-07 12:32:48,337 - INFO - wrapper - eval_data performance:
+2021-07-07 12:32:48,337 - INFO - wrapper - Writing example 0
+2021-07-07 12:34:15,046 - INFO - wrapper - {'acc': 0.7672782874617737}
+2021-07-07 12:34:45,666 - INFO - wrapper - Writing example 0
+2021-07-07 12:34:46,830 - INFO - wrapper - Saving trained model at ../out/FewGLUE_32dev/boolq/p1-i2...
+2021-07-07 12:34:46,831 - INFO - wrapper - best_dev32_acc: 0.6875 | best_global_step: 80
+2021-07-07 12:34:46,831 - INFO - wrapper - Saving models.
+2021-07-07 12:34:49,032 - INFO - wrapper - eval_data performance:
+2021-07-07 12:34:49,033 - INFO - wrapper - Writing example 0
+2021-07-07 12:36:15,797 - INFO - wrapper - {'acc': 0.7660550458715596}
+2021-07-07 12:36:46,395 - INFO - wrapper - Writing example 0
+2021-07-07 12:36:47,569 - INFO - wrapper - Saving trained model at ../out/FewGLUE_32dev/boolq/p1-i2...
+2021-07-07 12:36:47,570 - INFO - wrapper - best_dev32_acc: 0.6875 | best_global_step: 100
+2021-07-07 12:36:47,570 - INFO - wrapper - Saving models.
+2021-07-07 12:36:49,824 - INFO - wrapper - eval_data performance:
+2021-07-07 12:36:49,825 - INFO - wrapper - Writing example 0
+2021-07-07 12:38:16,668 - INFO - wrapper - {'acc': 0.7663608562691131}
+2021-07-07 12:38:47,319 - INFO - wrapper - Writing example 0
+2021-07-07 12:38:48,487 - INFO - wrapper - Saving trained model at ../out/FewGLUE_32dev/boolq/p1-i2...
+2021-07-07 12:38:48,488 - INFO - wrapper - best_dev32_acc: 0.6875 | best_global_step: 120
+2021-07-07 12:38:48,488 - INFO - wrapper - Saving models.
+2021-07-07 12:38:50,807 - INFO - wrapper - eval_data performance:
+2021-07-07 12:38:50,807 - INFO - wrapper - Writing example 0
+2021-07-07 12:40:17,456 - INFO - wrapper - {'acc': 0.7660550458715596}
+2021-07-07 12:40:48,090 - INFO - wrapper - Writing example 0
+2021-07-07 12:40:49,254 - INFO - wrapper - Saving trained model at ../out/FewGLUE_32dev/boolq/p1-i2...
+2021-07-07 12:40:49,255 - INFO - wrapper - best_dev32_acc: 0.6875 | best_global_step: 140
+2021-07-07 12:40:49,255 - INFO - wrapper - Saving models.
+2021-07-07 12:40:51,159 - INFO - wrapper - eval_data performance:
+2021-07-07 12:40:51,159 - INFO - wrapper - Writing example 0
+2021-07-07 12:42:17,991 - INFO - wrapper - {'acc': 0.7663608562691131}
+2021-07-07 12:42:48,671 - INFO - wrapper - Writing example 0
+2021-07-07 12:42:49,840 - INFO - wrapper - Saving trained model at ../out/FewGLUE_32dev/boolq/p1-i2...
+2021-07-07 12:42:49,840 - INFO - wrapper - best_dev32_acc: 0.6875 | best_global_step: 160
+2021-07-07 12:42:49,840 - INFO - wrapper - Saving models.
+2021-07-07 12:42:51,760 - INFO - wrapper - eval_data performance:
+2021-07-07 12:42:51,760 - INFO - wrapper - Writing example 0
+2021-07-07 12:44:18,469 - INFO - wrapper - {'acc': 0.7663608562691131}
+2021-07-07 12:44:49,072 - INFO - wrapper - Writing example 0
+2021-07-07 12:44:50,245 - INFO - wrapper - Saving trained model at ../out/FewGLUE_32dev/boolq/p1-i2...
+2021-07-07 12:44:50,245 - INFO - wrapper - best_dev32_acc: 0.6875 | best_global_step: 180
+2021-07-07 12:44:50,245 - INFO - wrapper - Saving models.
+2021-07-07 12:44:52,488 - INFO - wrapper - eval_data performance:
+2021-07-07 12:44:52,489 - INFO - wrapper - Writing example 0
+2021-07-07 12:46:19,137 - INFO - wrapper - {'acc': 0.7663608562691131}
+2021-07-07 12:46:49,849 - INFO - wrapper - Writing example 0
+2021-07-07 12:46:51,024 - INFO - wrapper - {'acc': 0.65625}
+2021-07-07 12:46:51,025 - INFO - wrapper - 8
+2021-07-07 12:47:21,657 - INFO - wrapper - Writing example 0
+2021-07-07 12:47:22,829 - INFO - wrapper - {'acc': 0.65625}
+2021-07-07 12:47:22,829 - INFO - wrapper - 9
+2021-07-07 12:47:53,563 - INFO - wrapper - Writing example 0
+2021-07-07 12:47:54,739 - INFO - wrapper - {'acc': 0.65625}
+2021-07-07 12:47:54,739 - INFO - wrapper - 10
+2021-07-07 12:48:11,577 - INFO - wrapper - Writing example 0
+2021-07-07 12:48:12,760 - INFO - modeling - Saving complete
+2021-07-07 12:48:12,760 - INFO - modeling - Starting evaluation...
+2021-07-07 12:48:28,553 - INFO - wrapper - Writing example 0
+2021-07-07 12:49:55,435 - INFO - wrapper - Writing example 0
+2021-07-07 12:49:56,625 - INFO - modeling - --- RESULT (pattern_id=1, iteration=2) ---
+2021-07-07 12:49:56,625 - INFO - modeling - eval_results:
+2021-07-07 12:49:56,625 - INFO - modeling - {'acc': 0.7663608562691131}
+2021-07-07 12:49:56,625 - INFO - modeling - dev32_results:
+2021-07-07 12:49:56,625 - INFO - modeling - {'acc': 0.6875}
+2021-07-07 12:49:57,859 - INFO - modeling - === OVERALL RESULTS ===
+2021-07-07 12:49:57,859 - INFO - modeling - eval_results:
+2021-07-07 12:49:57,860 - INFO - modeling - acc-p1: 0.7706422018348624 +- 0.0060547369642885325
+2021-07-07 12:49:57,860 - INFO - modeling - acc-all-p: 0.7706422018348624 +- 0.0060547369642885325
+2021-07-07 12:49:57,860 - INFO - modeling - dev32_results:
+2021-07-07 12:49:57,860 - INFO - modeling - acc-p1: 0.71875 +- 0.04419417382415922
+2021-07-07 12:49:57,860 - INFO - modeling - acc-all-p: 0.71875 +- 0.04419417382415922
