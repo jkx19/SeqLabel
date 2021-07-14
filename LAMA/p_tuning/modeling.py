@@ -255,7 +255,19 @@ class PTuneForLAMA(torch.nn.Module):
 
     #     self.input_tokens = torch.arange(self.preseqlen).long()
     #     self.wte = torch.nn.Embedding(self.preseqlen, config.n_embd)
-    #     self.control_trans = nn.Sequential(
-    #     torch.nn.Linear(config.n_embd, self.mid_dim),
-    #     torch.nn.Tanh(),
-    #     torch.nn.Linear(self.mid_dim, config.n_layer * 2 * config.n_embd))
+    #     self.control_trans = torch.nn.Sequential(
+    #         torch.nn.Linear(config.n_embd, self.mid_dim),
+    #         torch.nn.Tanh(),
+    #         torch.nn.Linear(self.mid_dim, config.n_layer * 2 * config.n_embd)
+    #     )
+
+    # def self.get_prompt(Self):
+    #     input_tokens = self.input_tokens.unsqueeze(0).expand(bsz, -1).to(self.device)
+    #     temp_control = self.wte(input_tokens)
+    #     past_key_values = self.control_trans(temp_control) #bsz, seqlen, layer*emb
+    #     bsz, seqlen, _ = past_key_values.shape
+    #     past_key_values = past_key_values.view(bsz, seqlen, self.match_n_layer * 2, self.match_n_head,
+    #                                            self.match_n_embd)
+    #     past_key_values = self.dropout(past_key_values)
+    #     past_key_values = past_key_values.permute([2, 0, 3, 1, 4]).split(2)
+    #     return past_key_values
