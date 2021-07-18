@@ -7,17 +7,19 @@ import torch.nn
 import torch.nn.functional as F
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.sampler import RandomSampler
-from torch.optim import AdamW, lr_scheduler
+from torch.optim import AdamW
 from transformers import TrainingArguments, HfArgumentParser
 from transformers.trainer_pt_utils import get_parameter_names
 
 from tqdm import tqdm
 from dataclasses import dataclass, field
 from typing import Optional
+import sys
 import os
+import argparse
 
 from data.conll_dataset import CoNLL
-from model.prefix import BertForTokenClassification
+from model.prefix import BertForTokenClassification, BertPrefixModel
 from trainer import Trainer
 
 
@@ -148,23 +150,23 @@ class DataTrainingArguments:
 # Note: the main reason abandoning LAMA is to fit the metric
 
 class Trainer_API:    
-    def __init__(self) -> None:
+    def __init__(self, args) -> None:
 
-        parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))        
-        self.model_args, self.data_args, self.training_args = parser.parse_args_into_dataclasses()
+        # parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))        
+        # self.model_args, self.data_args, self.training_args = parser.parse_args_into_dataclasses()
 
-        self.task = 'ner'
+        self.task = args.task
         assert self.task in ['pos', 'chunk', 'ner']
         self.device = torch.device('cuda:0')
 
-        self.batch_size = 16 * torch.cuda.device_count()
-        self.epoch = 5
+        self.batch_size = args.batch_size * torch.cuda.device_count()
+        self.epoch = 30
         self.adam_beta1 = 0.9
         self.adam_beta2 = 0.999
         self.adam_epsilon = 1e-8
         self.weight_decay = 0
         self.gamma = 0.9
-        self.lr = 5e-5
+        self.lr = args.lr
 
         raw_data = load_dataset('data/load_dataset.py')
         dataset = CoNLL(self.task, raw_data)
@@ -179,11 +181,20 @@ class Trainer_API:
         self.compute_metrics = dataset.compute_metrics
         self.bert_config = dataset.config
 
-        self.model = BertForTokenClassification.from_pretrained(
-            'bert-base-uncased',
-            config=self.bert_config,
-            revision='main',
-        )
+        prefix_tune = True
+        if prefix_tune:
+            self.model = BertPrefixModel.from_pretrained(
+                'bert-base-uncased',
+                config=self.bert_config,
+                revision='main',
+            )
+            self.model.set_param(args)
+        else:
+            self.model = BertForTokenClassification.from_pretrained(
+                'bert-base-uncased',
+                config=self.bert_config,
+                revision='main',
+            )
 
         self.train_loader = self.get_data_loader(self.train_dataset)
         self.dev_loader = self.get_data_loader(self.dev_dataset)
@@ -321,33 +332,49 @@ class Trainer_API:
         return result
 
 
-    def get_trainer_and_start(self):
-        self.trainer = Trainer(
-            model=self.model,
-            args=self.training_args,
-            train_dataset=self.train_dataset,
-            eval_dataset=self.dev_dataset,
-            tokenizer=self.tokenizer,
-            data_collator=self.data_collator,
-            compute_metrics=self.compute_metrics,
-        )
-        self.start()
+    # def get_trainer_and_start(self):
+    #     self.trainer = Trainer(
+    #         model=self.model,
+    #         args=self.training_args,
+    #         train_dataset=self.train_dataset,
+    #         eval_dataset=self.dev_dataset,
+    #         tokenizer=self.tokenizer,
+    #         data_collator=self.data_collator,
+    #         compute_metrics=self.compute_metrics,
+    #     )
+    #     self.start()
 
-    def start(self):
-        train_result = self.trainer.train()
-        metrics = train_result.metrics
-        self.trainer.save_model()  # Saves the tokenizer too for easy upload
+    # def start(self):
+    #     train_result = self.trainer.train()
+    #     metrics = train_result.metrics
+    #     self.trainer.save_model()  # Saves the tokenizer too for easy upload
 
-        metrics["train_samples"] = len(self.train_dataset)
+    #     metrics["train_samples"] = len(self.train_dataset)
 
-        self.trainer.log_metrics("train", metrics)
-        self.trainer.save_metrics("train", metrics)
-        self.trainer.save_state()
+    #     self.trainer.log_metrics("train", metrics)
+    #     self.trainer.save_metrics("train", metrics)
+    #     self.trainer.save_state()
 
+
+def construct_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--lr", type=float, default=1e-5)
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--task', type=str, choices=['pos', 'chunk', 'ner'], default='ner')
+    parser.add_argument('--pre_seq_len', type=int, default=5)
+    parser.add_argument('--mid_dim', type=int, default=512)
+    parser.add_argument('--bert_type', type=str, choices=['base', 'large'], default='base')
+    args = parser.parse_args()
+    return args
+
+def main():
+    args = construct_args()
+    os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+    train_api = Trainer_API(args)
+    result = train_api.train()
+    sys.stdout = open('result.txt')
+    print(args)
+    print(result)
 
 if __name__ == '__main__':
-    os.environ["CUDA_VISIBLE_DEVICES"] = "5,6,7"
-    train_api = Trainer_API()
-    result = train_api.train()
-    print(result)
-    # train_api.get_trainer_and_start()
+    main()
