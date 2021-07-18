@@ -372,7 +372,7 @@ def main():
     os.environ["CUDA_VISIBLE_DEVICES"] = "7"
     train_api = Trainer_API(args)
     result = train_api.train()
-    sys.stdout = open('result.txt')
+    sys.stdout = open('result.txt', 'a')
     print(args)
     print(result)
 
