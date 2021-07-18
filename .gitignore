@@ -3,3 +3,4 @@ __pycache__/
 /out/
 output/
 /checkpoints/
+result.txt
