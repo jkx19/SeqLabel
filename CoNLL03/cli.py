@@ -157,13 +157,13 @@ class Trainer_API:
         assert self.task in ['pos', 'chunk', 'ner']
         self.device = torch.device('cuda:0')
 
-        self.batch_size = 4
-        self.epoch = 10
-        self.adam_beta1 = 0.01
-        self.adam_beta2 = 0.01
-        self.adam_epsilon = 0.01
-        self.weight_decay = 1e-4
-        self.decay_rate = 0.01
+        self.batch_size = 16 * torch.cuda.device_count()
+        self.epoch = 5
+        self.adam_beta1 = 0.9
+        self.adam_beta2 = 0.999
+        self.adam_epsilon = 1e-8
+        self.weight_decay = 0
+        self.gamma = 0.9
         self.lr = 5e-5
 
         raw_data = load_dataset('data/load_dataset.py')
@@ -188,7 +188,9 @@ class Trainer_API:
         self.train_loader = self.get_data_loader(self.train_dataset)
         self.dev_loader = self.get_data_loader(self.dev_dataset)
         self.test_loader = self.get_data_loader(self.test_dataset)
-        self.max_seq_len = max([batch['labels'].shape[1] for _, batch in enumerate(self.dev_loader)])
+        max_dev_len = max([batch['labels'].shape[1] for _, batch in enumerate(self.dev_loader)])
+        max_test_len = max([batch['labels'].shape[1] for _, batch in enumerate(self.test_loader)])
+        self.max_seq_len = max(max_dev_len, max_test_len)
 
     def get_sampler(self, dataset) -> Optional[torch.utils.data.sampler.Sampler]:
         generator = torch.Generator()
@@ -233,6 +235,9 @@ class Trainer_API:
         pass
 
     def pad_tensor(self, tensor: torch.Tensor, pad_index: int):
+        r'''
+        Pad the ( batched ) result tensor to max length for concatent with given pad-index
+        '''
         max_size = self.max_seq_len
         old_size = tensor.shape
         new_size = list(old_size)
@@ -243,10 +248,15 @@ class Trainer_API:
 
     def train(self):        
         self.get_optimizer()
-        self.scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=self.optimizer, gamma=self.decay_rate)
+        self.scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=self.optimizer, gamma=self.gamma)
         pbar = tqdm(total=len(self.train_loader)*self.epoch)
 
+        if torch.cuda.device_count() > 1:
+            self.model = torch.nn.DataParallel(self.model)
         self.model.to(self.device)
+
+        best_dev_result = 0
+        best_test_result = 0
         for epoch in range(self.epoch):
             # Train
             total_loss = 0
@@ -254,7 +264,8 @@ class Trainer_API:
             for batch_idx, batch in enumerate(self.train_loader):
                 batch = {k:v.to(self.device) for k,v in batch.items()}
                 output = self.model(**batch)
-                loss = output.loss
+                loss = torch.sum(output.loss)
+                # loss = output.loss
                 total_loss += loss.item()
                 
                 loss.backward()
@@ -265,25 +276,50 @@ class Trainer_API:
             self.scheduler.step()
 
             # Evaluate
-            self.model.eval()
-            with torch.no_grad():
-                labels, prediction = [], []
-                for batch_idx, batch in enumerate(self.dev_loader):
-                    batch = {k:v.to(self.device) for k,v in batch.items()}
-                    output = self.model(**batch)
-                    loss,logits = output.loss, output.logits
-                    logits = self.pad_tensor(logits, -100)
-                    prediction.append(logits)
-                    batch_label = self.pad_tensor(batch['labels'], -100)
-                    labels.append(batch_label)
-                prediction = torch.cat(prediction)
-                labels = torch.cat(labels)
-                result = self.compute_metrics((np.array(prediction.cpu()), np.array(labels.cpu())))
-
-                pbar.set_description(f'Train_loss: {total_loss}, Eval_F1: {result["f1"]}')
+            dev_result = self.eval()
+            test_result = self.test()
+            if best_dev_result < dev_result["f1"]:
+                best_dev_result = dev_result["f1"]
+                best_test_result = test_result
+            pbar.set_description(f'Train_loss: {total_loss:.1f}, Eval_F1: {dev_result["f1"]:.3f}, Test_F1: {test_result["f1"]:.3f},')
 
         pbar.close()
+        return best_test_result
     
+    def eval(self):
+        self.model.eval()
+        with torch.no_grad():
+            labels, prediction = [], []
+            for batch_idx, batch in enumerate(self.dev_loader):
+                batch = {k:v.to(self.device) for k,v in batch.items()}
+                output = self.model(**batch)
+                loss,logits = output.loss, output.logits
+                logits = self.pad_tensor(logits, -100)
+                prediction.append(logits)
+                batch_label = self.pad_tensor(batch['labels'], -100)
+                labels.append(batch_label)
+            prediction = torch.cat(prediction)
+            labels = torch.cat(labels)
+            result = self.compute_metrics((np.array(prediction.cpu()), np.array(labels.cpu())))
+        return result
+
+    def test(self):
+        self.model.eval()
+        with torch.no_grad():
+            labels, prediction = [], []
+            for batch_idx, batch in enumerate(self.test_loader):
+                batch = {k:v.to(self.device) for k,v in batch.items()}
+                output = self.model(**batch)
+                loss,logits = output.loss, output.logits
+                logits = self.pad_tensor(logits, -100)
+                prediction.append(logits)
+                batch_label = self.pad_tensor(batch['labels'], -100)
+                labels.append(batch_label)
+            prediction = torch.cat(prediction)
+            labels = torch.cat(labels)
+            result = self.compute_metrics((np.array(prediction.cpu()), np.array(labels.cpu())))
+        return result
+
 
     def get_trainer_and_start(self):
         self.trainer = Trainer(
@@ -310,7 +346,8 @@ class Trainer_API:
 
 
 if __name__ == '__main__':
-    os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "5,6,7"
     train_api = Trainer_API()
-    train_api.train()
+    result = train_api.train()
+    print(result)
     # train_api.get_trainer_and_start()
