@@ -502,7 +502,6 @@ class Trainer:
 
         # Build the sampler.
         if self.args.group_by_length:
-            exit()
             if is_datasets_available() and isinstance(self.train_dataset, datasets.Dataset):
                 lengths = (
                     self.train_dataset[self.args.length_column_name]
@@ -572,24 +571,27 @@ class Trainer:
         if is_datasets_available() and isinstance(train_dataset, datasets.Dataset):
             train_dataset = self._remove_unused_columns(train_dataset, description="training")
 
-        # for data in train_dataset:
-        #     print(data)
-        #     exit()
+        if isinstance(train_dataset, torch.utils.data.dataset.IterableDataset):
+            if self.args.world_size > 1:
+                train_dataset = IterableDatasetShard(
+                    train_dataset,
+                    batch_size=self.args.train_batch_size,
+                    drop_last=self.args.dataloader_drop_last,
+                    num_processes=self.args.world_size,
+                    process_index=self.args.process_index,
+                )
 
+            return DataLoader(
+                train_dataset,
+                batch_size=self.args.train_batch_size,
+                collate_fn=self.data_collator,
+                num_workers=self.args.dataloader_num_workers,
+                pin_memory=self.args.dataloader_pin_memory,
+            )
+        
         train_sampler = self._get_train_sampler()
 
-        train_loader = DataLoader(
-            train_dataset,
-            batch_size=self.args.train_batch_size,
-            sampler=train_sampler,
-            collate_fn=self.data_collator,
-            drop_last=self.args.dataloader_drop_last,
-            num_workers=self.args.dataloader_num_workers,
-            pin_memory=self.args.dataloader_pin_memory,
-        )
-        # for step, inputs in enumerate(train_loader):
-        #     print(inputs)
-        #     exit()
+        
 
         return DataLoader(
             train_dataset,
@@ -664,7 +666,7 @@ class Trainer:
                 num_workers=self.args.dataloader_num_workers,
                 pin_memory=self.args.dataloader_pin_memory,
             )
-
+       
         eval_sampler = self._get_eval_sampler(eval_dataset)
 
         return DataLoader(
