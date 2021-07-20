@@ -160,12 +160,12 @@ class Trainer_API:
         self.device = torch.device('cuda:0')
 
         self.batch_size = args.batch_size * torch.cuda.device_count()
-        self.epoch = 30
+        self.epoch = 50
         self.adam_beta1 = 0.9
         self.adam_beta2 = 0.999
         self.adam_epsilon = 1e-8
         self.weight_decay = 0
-        self.gamma = 0.9
+        self.gamma = 0.99
         self.lr = args.lr
 
         raw_data = load_dataset('data/load_dataset.py')
@@ -181,20 +181,21 @@ class Trainer_API:
         self.compute_metrics = dataset.compute_metrics
         self.bert_config = dataset.config
 
-        prefix_tune = True
-        if prefix_tune:
+        self.method = args.method
+        if args.method == 'prefix':
             self.model = BertPrefixModel.from_pretrained(
                 'bert-base-uncased',
                 config=self.bert_config,
                 revision='main',
             )
             self.model.set_param(args)
-        else:
+        elif args.method == 'finetune':
             self.model = BertForTokenClassification.from_pretrained(
                 'bert-base-uncased',
                 config=self.bert_config,
                 revision='main',
             )
+        # self.model = BertPromptModel(self.bert_config)
 
         self.train_loader = self.get_data_loader(self.train_dataset)
         self.dev_loader = self.get_data_loader(self.dev_dataset)
@@ -292,9 +293,12 @@ class Trainer_API:
             if best_dev_result < dev_result["f1"]:
                 best_dev_result = dev_result["f1"]
                 best_test_result = test_result
+                best_head = self.model.classifier.state_dict()
             pbar.set_description(f'Train_loss: {total_loss:.1f}, Eval_F1: {dev_result["f1"]:.3f}, Test_F1: {test_result["f1"]:.3f},')
 
         pbar.close()
+        if self.methos == 'finetune':
+            torch.save(best_head, 'model/checkpoint.pkl')
         return best_test_result
     
     def eval(self):
@@ -364,12 +368,13 @@ def construct_args():
     parser.add_argument('--pre_seq_len', type=int, default=5)
     parser.add_argument('--mid_dim', type=int, default=512)
     parser.add_argument('--bert_type', type=str, choices=['base', 'large'], default='base')
+    parser.add_argument('--method', type=str, choices=['prefix', 'finetune'], default='prefix')
     args = parser.parse_args()
     return args
 
 def main():
     args = construct_args()
-    os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "5"
     train_api = Trainer_API(args)
     result = train_api.train()
     sys.stdout = open('result.txt', 'a')

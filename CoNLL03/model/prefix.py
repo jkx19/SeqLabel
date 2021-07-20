@@ -18,12 +18,21 @@ class BertForTokenClassification(BertPreTrainedModel):
         self.dropout = torch.nn.Dropout(config.hidden_dropout_prob)
         self.classifier = torch.nn.Linear(config.hidden_size, config.num_labels)
 
-        only_cls_head = False
+        only_cls_head = True
         if only_cls_head:
             for param in self.bert.parameters():
                 param.requires_grad = False
 
         self.init_weights()
+
+        bert_param = 0
+        for name, param in self.bert.named_parameters():
+            bert_param += param.numel()
+        all_param = 0
+        for name, param in self.named_parameters():
+            all_param += param.numel()
+        total_param = all_param - bert_param
+        print('total param is {}'.format(total_param))
 
     
     def forward(
@@ -97,6 +106,10 @@ class BertPrefixModel(BertPreTrainedModel):
         self.dropout = torch.nn.Dropout(config.hidden_dropout_prob)
         self.classifier = torch.nn.Linear(config.hidden_size, config.num_labels)
 
+        from_pretrained = False
+        if from_pretrained:
+            self.classifier.lod_state_dict(torch.load('model/checkpoint.pkl'))
+
         for param in self.bert.parameters():
             param.requires_grad = False
         
@@ -114,6 +127,15 @@ class BertPrefixModel(BertPreTrainedModel):
             torch.nn.Tanh(),
             torch.nn.Linear(self.mid_dim, config.num_hidden_layers * 2 * config.hidden_size)
         )
+
+        bert_param = 0
+        for name, param in self.bert.named_parameters():
+            bert_param += param.numel()
+        all_param = 0
+        for name, param in self.named_parameters():
+            all_param += param.numel()
+        total_param = all_param - bert_param
+        print('total param is {}'.format(total_param)) # 9860105
 
     def set_param(self, args):
         self.pre_seq_len = args.pre_seq_len
