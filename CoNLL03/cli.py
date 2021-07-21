@@ -160,7 +160,7 @@ class Trainer_API:
         self.device = torch.device('cuda:0')
 
         self.batch_size = args.batch_size * torch.cuda.device_count()
-        self.epoch = 50
+        self.epoch = args.epoch
         self.adam_beta1 = 0.9
         self.adam_beta2 = 0.999
         self.adam_epsilon = 1e-8
@@ -183,19 +183,19 @@ class Trainer_API:
 
         self.method = args.method
         if args.method == 'prefix':
+            self.bert_config.pre_seq_len = args.pre_seq_len
+            self.bert_config.mid_dim = args.mid_dim
             self.model = BertPrefixModel.from_pretrained(
                 'bert-base-uncased',
                 config=self.bert_config,
                 revision='main',
             )
-            self.model.set_param(args)
         elif args.method == 'finetune':
             self.model = BertForTokenClassification.from_pretrained(
                 'bert-base-uncased',
                 config=self.bert_config,
                 revision='main',
             )
-        # self.model = BertPromptModel(self.bert_config)
 
         self.train_loader = self.get_data_loader(self.train_dataset)
         self.dev_loader = self.get_data_loader(self.dev_dataset)
@@ -297,7 +297,7 @@ class Trainer_API:
             pbar.set_description(f'Train_loss: {total_loss:.1f}, Eval_F1: {dev_result["f1"]:.3f}, Test_F1: {test_result["f1"]:.3f},')
 
         pbar.close()
-        if self.methos == 'finetune':
+        if self.method == 'finetune':
             torch.save(best_head, 'model/checkpoint.pkl')
         return best_test_result
     
@@ -336,30 +336,6 @@ class Trainer_API:
         return result
 
 
-    # def get_trainer_and_start(self):
-    #     self.trainer = Trainer(
-    #         model=self.model,
-    #         args=self.training_args,
-    #         train_dataset=self.train_dataset,
-    #         eval_dataset=self.dev_dataset,
-    #         tokenizer=self.tokenizer,
-    #         data_collator=self.data_collator,
-    #         compute_metrics=self.compute_metrics,
-    #     )
-    #     self.start()
-
-    # def start(self):
-    #     train_result = self.trainer.train()
-    #     metrics = train_result.metrics
-    #     self.trainer.save_model()  # Saves the tokenizer too for easy upload
-
-    #     metrics["train_samples"] = len(self.train_dataset)
-
-    #     self.trainer.log_metrics("train", metrics)
-    #     self.trainer.save_metrics("train", metrics)
-    #     self.trainer.save_state()
-
-
 def construct_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", type=float, default=1e-5)
@@ -369,6 +345,7 @@ def construct_args():
     parser.add_argument('--mid_dim', type=int, default=512)
     parser.add_argument('--bert_type', type=str, choices=['base', 'large'], default='base')
     parser.add_argument('--method', type=str, choices=['prefix', 'finetune'], default='prefix')
+    parser.add_argument('--epoch', type=int, default=30)
     args = parser.parse_args()
     return args
 

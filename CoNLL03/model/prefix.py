@@ -113,8 +113,8 @@ class BertPrefixModel(BertPreTrainedModel):
         for param in self.bert.parameters():
             param.requires_grad = False
         
-        self.pre_seq_len = 5
-        self.mid_dim = 512
+        self.pre_seq_len = config.pre_seq_len
+        self.mid_dim = config.mid_dim
         self.n_layer = config.num_hidden_layers
         self.n_head = config.num_attention_heads
         self.n_embd = config.hidden_size // config.num_attention_heads
@@ -136,14 +136,9 @@ class BertPrefixModel(BertPreTrainedModel):
             all_param += param.numel()
         total_param = all_param - bert_param
         print('total param is {}'.format(total_param)) # 9860105
-
-    def set_param(self, args):
-        self.pre_seq_len = args.pre_seq_len
-        self.mid_dim = args.mid_dim
     
     def get_prompt(self, batch_size):
         prefix_tokens = self.prefix_tokens.unsqueeze(0).expand(batch_size, -1).to(self.bert.device)
-        # batch_size * pre_seq_len
         prefix_tokens = self.pre_to_emb(prefix_tokens)
         past_key_values = self.trans(prefix_tokens)
         bsz, seqlen, _ = past_key_values.shape
@@ -175,6 +170,8 @@ class BertPrefixModel(BertPreTrainedModel):
 
         batch_size = input_ids.shape[0]
         past_key_values = self.get_prompt(batch_size=batch_size)
+        prefix_attention_mask = torch.ones(batch_size, self.pre_seq_len).to(self.bert.device)
+        attention_mask = torch.cat((prefix_attention_mask, attention_mask), dim=1)
 
         outputs = self.bert(
             input_ids,
@@ -186,12 +183,13 @@ class BertPrefixModel(BertPreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
+            past_key_values=past_key_values,
         )
 
         sequence_output = outputs[0]
-
         sequence_output = self.dropout(sequence_output)
         logits = self.classifier(sequence_output)
+        attention_mask = attention_mask[:,self.pre_seq_len:].contiguous()
 
         loss = None
         if labels is not None:
