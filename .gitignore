@@ -4,3 +4,4 @@ __pycache__/
 output/
 /checkpoints/
 result.txt
+experiment.py

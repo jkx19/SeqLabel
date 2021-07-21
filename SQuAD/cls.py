@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field
 from typing import Optional
 import numpy as np
-from model.prefix import BertForQuestionAnswering
+from model.prefix import BertForQuestionAnswering, BertPrefixModel
+from transformers import AutoTokenizer
 from transformers import (
     AutoConfig,
     AutoModelForQuestionAnswering,
-    AutoTokenizer,
     DataCollatorWithPadding,
     EvalPrediction,
     HfArgumentParser,
@@ -20,6 +20,7 @@ import torch
 from torch.optim import AdamW
 
 from tqdm import tqdm
+import argparse
 import os
 
 from data.squad_dataset import SQuAD
@@ -171,10 +172,10 @@ class DataTrainingArguments:
 
 class Train_API():
     
-    def __init__(self) -> None:
+    def __init__(self, args) -> None:
         # parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
         # model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-        self.batch_size = 64
+        self.batch_size = 16
 
         config = BertConfig.from_pretrained(
             'bert-base-uncased',
@@ -186,11 +187,21 @@ class Train_API():
             use_fast=True,
         )
         config.num_labels = 2
-        self.model = BertForQuestionAnswering.from_pretrained(
-            'bert-base-uncased',
-            config=config,
-            revision='main',
-        )
+        config.pre_seq_len = args.pre_seq_len
+        config.mid_dim = args.mid_dim
+        method = args.method
+        if method == 'prefix':
+            self.model = BertPrefixModel.from_pretrained(
+                'bert-base-uncased',
+                config=config,
+                revision='main',
+            )
+        elif method == 'finetune':
+            self.model = BertForQuestionAnswering.from_pretrained(
+                'bert-base-uncased',
+                config=config,
+                revision='main',
+            )
         dataset = SQuAD(tokenizer, self.batch_size)
 
         self.eval_example = dataset.eval_example
@@ -201,13 +212,13 @@ class Train_API():
 
         self.device = torch.device('cuda:0')
         self.batch_size = self.batch_size * torch.cuda.device_count()
-        self.epoch = 5
+        self.epoch = args.epoch
         self.adam_beta1 = 0.9
         self.adam_beta2 = 0.999
         self.adam_epsilon = 1e-8
         self.weight_decay = 0
         self.gamma = 0.99
-        self.lr = 3e-5
+        self.lr = args.lr
 
         self.compute_metric = dataset.compute_metric
         self.post_process_function = dataset.post_process_function
@@ -236,7 +247,6 @@ class Train_API():
     def get_schedular(self):
         pass
 
-
     def train(self):
         self.get_optimizer()
         self.scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=self.optimizer, gamma=self.gamma)
@@ -247,7 +257,7 @@ class Train_API():
         self.model.to(self.device)
 
         best_dev_result = 0
-        best_test_result = 0
+        best_result = None
         for epoch in range(self.epoch):
             # Train
             total_loss = 0
@@ -268,7 +278,11 @@ class Train_API():
 
             result = self.evaluate(pbar)
             eval_f1 = result['eval_f1']
+            if eval_f1 > best_dev_result:
+                best_dev_result = eval_f1
+                best_result = result
             pbar.set_description(f'Train_loss: {total_loss:.1f}, Eval_F1: {eval_f1:.3f}')
+        return result
 
     def evaluate(self, pbar: tqdm):
         self.model.eval()
@@ -291,21 +305,21 @@ class Train_API():
         
         return metrics
 
-    def pad_tensor(self, tensor: torch.Tensor, pad_index: int):
-        r'''
-        Pad the ( batched ) result tensor to max length for concatent with given pad-index
-        '''
-        max_size = self.max_seq_len = 384
-        old_size = tensor.shape
-        new_size = list(old_size)
-        new_size[1] = max_size
-        new_tensor = tensor.new_zeros(tuple(new_size)) + pad_index
-        new_tensor[:, : old_size[1]] = tensor
-        return new_tensor
 
+def construct_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--lr', type=float, default=5e-5)
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--pre_seq_len', type=int, default=10)
+    parser.add_argument('--mid_dim', type=int, default=512)
+    parser.add_argument('--method', type=str, choices=['finetune', 'prefix'], default='prefix')
+    parser.add_argument('--epoch', type=int, default=10)
+    args = parser.parse_args()
+    return args
 
-
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "5"      
-train_api = Train_API()
-train_api.train()
+if __name__ == '__main__':
+    args = construct_args()
+    os.environ["CUDA_VISIBLE_DEVICES"] = "7"      
+    train_api = Train_API(args)
+    result = train_api.train()
+    print(result)
