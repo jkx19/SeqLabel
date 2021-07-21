@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional
 import numpy as np
-from transformers import BertForQuestionAnswering
+from model.prefix import BertForQuestionAnswering
 from transformers import (
     AutoConfig,
     AutoModelForQuestionAnswering,
@@ -174,7 +174,7 @@ class Train_API():
     def __init__(self) -> None:
         # parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
         # model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-        self.batch_size = 16
+        self.batch_size = 64
 
         config = BertConfig.from_pretrained(
             'bert-base-uncased',
@@ -306,6 +306,6 @@ class Train_API():
 
 
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"      
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"      
 train_api = Train_API()
 train_api.train()
