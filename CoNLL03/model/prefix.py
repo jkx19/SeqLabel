@@ -126,7 +126,7 @@ class BertPrefixModel(BertPreTrainedModel):
 
         from_pretrained = False
         if from_pretrained:
-            self.classifier.lod_state_dict(torch.load('model/checkpoint.pkl'))
+            self.classifier.load_state_dict(torch.load('model/checkpoint.pkl'))
 
         for param in self.bert.parameters():
             param.requires_grad = False
