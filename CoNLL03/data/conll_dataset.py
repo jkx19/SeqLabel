@@ -3,7 +3,7 @@ from torch.utils import data
 from torch.utils.data import Dataset
 from datasets.arrow_dataset import Dataset as HFDataset
 from datasets.load import load_metric
-from transformers import AutoTokenizer, DataCollatorForTokenClassification, BertConfig
+from transformers import AutoTokenizer, DataCollatorForTokenClassification, AutoConfig
 import numpy as np
 
 # pos_tags: a list of classification labels, with possible values including " (0), '' (1), # (2), $ (3), ( (4).
@@ -21,7 +21,7 @@ MAP_DICT = {
 }
 
 class CoNLL(Dataset):
-    def __init__(self, task: str, data: HFDataset) -> None:
+    def __init__(self, task: str, data: HFDataset, model_name:str) -> None:
         super().__init__()
         self.task = task + '_tags'
         self.input, self.labels, self.label_mask, self.attention_mask = [], [], [], []
@@ -30,7 +30,7 @@ class CoNLL(Dataset):
         self.ignore_columns = ['ner_tags','pos_tags', 'id', 'chunk_tags', 'tokens']
         
         self.tokenizer = AutoTokenizer.from_pretrained(
-            'bert-base-uncased', 
+            model_name, 
             use_fast=True,
             revision='main',
         )
@@ -61,8 +61,8 @@ class CoNLL(Dataset):
 
         self.data_collator = DataCollatorForTokenClassification(self.tokenizer, pad_to_multiple_of=8)
         self.metric = load_metric('data/metric.py')
-        self.config = BertConfig.from_pretrained(
-            'bert-base-uncased',
+        self.config = AutoConfig.from_pretrained(
+            model_name,
             num_labels=num_labels,
             label2id=self.label_to_id,
             id2label={i: l for l, i in self.label_to_id.items()},

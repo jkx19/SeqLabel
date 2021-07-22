@@ -158,8 +158,9 @@ class Trainer_API:
         self.task = args.task
         assert self.task in ['pos', 'chunk', 'ner']
         self.device = torch.device('cuda:0')
-
-        self.batch_size = args.batch_size * torch.cuda.device_count()
+        
+        device_num = torch.cuda.device_count() if torch.cuda.is_available() else 1
+        self.batch_size = args.batch_size * device_num
         self.epoch = args.epoch
         self.adam_beta1 = 0.9
         self.adam_beta2 = 0.999
@@ -168,8 +169,9 @@ class Trainer_API:
         self.gamma = 0.99
         self.lr = args.lr
 
+        self.model_name = f'bert-{args.model_size}-uncased'
         raw_data = load_dataset('data/load_dataset.py')
-        dataset = CoNLL(self.task, raw_data)
+        dataset = CoNLL(self.task, raw_data, self.model_name)
 
         self.train_dataset = dataset.train_data
         self.dev_dataset = dataset.dev_data
@@ -186,13 +188,13 @@ class Trainer_API:
             self.bert_config.pre_seq_len = args.pre_seq_len
             self.bert_config.mid_dim = args.mid_dim
             self.model = BertPrefixModel.from_pretrained(
-                'bert-base-uncased',
+                self.model_name,
                 config=self.bert_config,
                 revision='main',
             )
         elif args.method == 'finetune':
             self.model = BertForTokenClassification.from_pretrained(
-                'bert-base-uncased',
+                self.model_name,
                 config=self.bert_config,
                 revision='main',
             )
@@ -338,12 +340,12 @@ class Trainer_API:
 
 def construct_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--lr", type=float, default=1e-5)
+    parser.add_argument("--lr", type=float, default=5e-5)
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--task', type=str, choices=['pos', 'chunk', 'ner'], default='ner')
     parser.add_argument('--pre_seq_len', type=int, default=5)
     parser.add_argument('--mid_dim', type=int, default=512)
-    parser.add_argument('--bert_type', type=str, choices=['base', 'large'], default='base')
+    parser.add_argument('--model_size', type=str, choices=['base', 'large'], default='base')
     parser.add_argument('--method', type=str, choices=['prefix', 'finetune'], default='prefix')
     parser.add_argument('--epoch', type=int, default=30)
     args = parser.parse_args()

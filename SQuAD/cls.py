@@ -22,6 +22,7 @@ from torch.optim import AdamW
 from tqdm import tqdm
 import argparse
 import os
+import sys
 
 from data.squad_dataset import SQuAD
 
@@ -322,4 +323,5 @@ if __name__ == '__main__':
     os.environ["CUDA_VISIBLE_DEVICES"] = "7"      
     train_api = Train_API(args)
     result = train_api.train()
+    sys.stdout = open('result.txt', 'a')
     print(result)
