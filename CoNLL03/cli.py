@@ -133,18 +133,6 @@ class DataTrainingArguments:
         metadata={"help": "Whether to return all the entity levels during evaluation or just the overall ones."},
     )
 
-    # def __post_init__(self):
-    #     if self.dataset_name is None and self.train_file is None and self.validation_file is None:
-    #         raise ValueError("Need either a dataset name or a training/validation file.")
-    #     else:
-    #         if self.train_file is not None:
-    #             extension = self.train_file.split(".")[-1]
-    #             assert extension in ["csv", "json"], "`train_file` should be a csv or a json file."
-    #         if self.validation_file is not None:
-    #             extension = self.validation_file.split(".")[-1]
-    #             assert extension in ["csv", "json"], "`validation_file` should be a csv or a json file."
-    #     self.task_name = self.task_name.lower()
-
 
 # METRIC: F1 score
 # Note: the main reason abandoning LAMA is to fit the metric
@@ -185,6 +173,7 @@ class Trainer_API:
 
         self.method = args.method
         if args.method == 'prefix':
+            self.bert_config.hidden_dropout_prob = args.dropout
             self.bert_config.pre_seq_len = args.pre_seq_len
             self.bert_config.mid_dim = args.mid_dim
             self.model = BertPrefixModel.from_pretrained(
@@ -348,12 +337,14 @@ def construct_args():
     parser.add_argument('--model_size', type=str, choices=['base', 'large'], default='base')
     parser.add_argument('--method', type=str, choices=['prefix', 'finetune'], default='prefix')
     parser.add_argument('--epoch', type=int, default=30)
+    parser.add_argument('--dropout', type=float, default=0.1)
+    parser.add_argument('--cuda', type=list, default=[7])
     args = parser.parse_args()
     return args
 
 def main():
     args = construct_args()
-    os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+    os.environ["CUDA_VISIBLE_DEVICES"] = ','.join([str(i) for i in args.cuda])
     train_api = Trainer_API(args)
     result = train_api.train()
     sys.stdout = open('result.txt', 'a')
