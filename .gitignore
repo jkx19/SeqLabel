@@ -1,7 +1,7 @@
 __pycache__/
 /out/
 output/
-/checkpoints/
+checkpoints/
 result.txt
 experiment.py
 *.txt

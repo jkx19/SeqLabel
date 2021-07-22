@@ -300,7 +300,7 @@ class Trainer_API:
 
         pbar.close()
         if self.method == 'finetune':
-            torch.save(best_head, 'model/checkpoint.pkl')
+            torch.save(best_head, 'checkpoints/classifier.pkl')
         return best_test_result
     
     def eval(self):
@@ -353,7 +353,7 @@ def construct_args():
 
 def main():
     args = construct_args()
-    os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "7"
     train_api = Trainer_API(args)
     result = train_api.train()
     sys.stdout = open('result.txt', 'a')
