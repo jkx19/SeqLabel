@@ -125,7 +125,7 @@ class BertPrefixModel(BertPreTrainedModel):
 
         self.bert = BertModel(config, add_pooling_layer=False)
         self.qa_outputs = torch.nn.Linear(config.hidden_size, config.num_labels)
-        self.dropout = torch.nn.Dropout(0.5)
+        self.dropout = torch.nn.Dropout(config.dropout)
         self.prefix_encoder = PrefixEncoder(config)
         self.prefix_tokens = torch.arange(self.pre_seq_len).long()
 

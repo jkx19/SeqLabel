@@ -182,6 +182,7 @@ class Train_API():
             'bert-base-uncased',
             revision='main',
         )
+        config.dropout =args.dropout
         tokenizer = AutoTokenizer.from_pretrained(
             'bert-base-uncased',
             revision='main',
@@ -283,7 +284,7 @@ class Train_API():
                 best_dev_result = eval_f1
                 best_result = result
             pbar.set_description(f'Train_loss: {total_loss:.1f}, Eval_F1: {eval_f1:.3f}')
-        return result
+        return best_result
 
     def evaluate(self, pbar: tqdm):
         self.model.eval()
@@ -315,13 +316,15 @@ def construct_args():
     parser.add_argument('--mid_dim', type=int, default=512)
     parser.add_argument('--method', type=str, choices=['finetune', 'prefix'], default='prefix')
     parser.add_argument('--epoch', type=int, default=10)
+    parser.add_argument('--dropout', type=float, default=0.3)
     args = parser.parse_args()
     return args
 
 if __name__ == '__main__':
     args = construct_args()
-    os.environ["CUDA_VISIBLE_DEVICES"] = "7"      
+    os.environ["CUDA_VISIBLE_DEVICES"] = "6"      
     train_api = Train_API(args)
     result = train_api.train()
     sys.stdout = open('result.txt', 'a')
+    print(args)
     print(result)
