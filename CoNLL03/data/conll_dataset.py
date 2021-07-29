@@ -25,14 +25,15 @@ class CoNLL(Dataset):
         super().__init__()
         self.task = task + '_tags'
         self.input, self.labels, self.label_mask, self.attention_mask = [], [], [], []
-        # self.ignore_columns = set(('ner_tags','pos_tags', 'id', 'chunk_tags', 'tokens'))
-        # self.ignore_columns = list(self.ignore_columns - set([self.task]))
         self.ignore_columns = ['ner_tags','pos_tags', 'id', 'chunk_tags', 'tokens']
         
+        aps = True if 'deberta' in model_name else False
+        tokenizer_name = 'microsoft/deberta-xlarge' if 'deberta' in model_name else model_name
         self.tokenizer = AutoTokenizer.from_pretrained(
-            model_name, 
+            tokenizer_name,
             use_fast=True,
             revision='main',
+            add_prefix_space=aps,
         )
 
         # self.label_list = self.get_label_list(data['train'][self.task])
@@ -100,6 +101,8 @@ class CoNLL(Dataset):
             # We use this argument because the texts in our dataset are lists of words (with a label for each word).
             is_split_into_words=True,
         )
+        # print(tokenized_inputs.keys())
+        # exit()
         labels = []
         for i, label in enumerate(examples[self.task]):
             word_ids = tokenized_inputs.word_ids(batch_index=i)
