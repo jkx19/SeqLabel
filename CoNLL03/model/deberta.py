@@ -249,6 +249,7 @@ class DebertaV2Attention(nn.Module):
         query_states=None,
         relative_pos=None,
         rel_embeddings=None,
+        past_key_value=None,
     ):
         self_output = self.self(
             hidden_states,
@@ -257,6 +258,7 @@ class DebertaV2Attention(nn.Module):
             query_states=query_states,
             relative_pos=relative_pos,
             rel_embeddings=rel_embeddings,
+            past_key_value=past_key_value,
         )
         if return_att:
             self_output, att_matrix = self_output
@@ -318,7 +320,9 @@ class DebertaV2Layer(nn.Module):
         query_states=None,
         relative_pos=None,
         rel_embeddings=None,
+        past_key_value=None,
     ):
+        self_attn_past_key_value = past_key_value[:2] if past_key_value is not None else None
         attention_output = self.attention(
             hidden_states,
             attention_mask,
@@ -326,6 +330,7 @@ class DebertaV2Layer(nn.Module):
             query_states=query_states,
             relative_pos=relative_pos,
             rel_embeddings=rel_embeddings,
+            past_key_value=self_attn_past_key_value,
         )
         if return_att:
             attention_output, att_matrix = attention_output
@@ -435,6 +440,7 @@ class DebertaV2Encoder(nn.Module):
         query_states=None,
         relative_pos=None,
         return_dict=True,
+        past_key_values=None,
     ):
         if attention_mask.dim() <= 2:
             input_mask = attention_mask
@@ -446,7 +452,7 @@ class DebertaV2Encoder(nn.Module):
         all_hidden_states = () if output_hidden_states else None
         all_attentions = () if output_attentions else None
 
-        if isinstance(hidden_states, Sequence):
+        if isinstance(hidden_states, Sequence): # False
             next_kv = hidden_states[0]
         else:
             next_kv = hidden_states
@@ -457,6 +463,8 @@ class DebertaV2Encoder(nn.Module):
             if output_hidden_states:
                 all_hidden_states = all_hidden_states + (output_states,)
 
+            past_key_value = past_key_values[i] if past_key_values is not None else None
+
             output_states = layer_module(
                 next_kv,
                 attention_mask,
@@ -464,6 +472,7 @@ class DebertaV2Encoder(nn.Module):
                 query_states=query_states,
                 relative_pos=relative_pos,
                 rel_embeddings=rel_embeddings,
+                past_key_value=past_key_value,
             )
             if output_attentions:
                 output_states, att_m = output_states
@@ -609,6 +618,7 @@ class DisentangledSelfAttention(nn.Module):
         query_states=None,
         relative_pos=None,
         rel_embeddings=None,
+        past_key_value=None,
     ):
         """
         Call the module
@@ -823,7 +833,7 @@ class DebertaV2Embeddings(nn.Module):
         # position_ids (1, len position emb) is contiguous in memory and exported when serialized
         self.register_buffer("position_ids", torch.arange(config.max_position_embeddings).expand((1, -1)))
 
-    def forward(self, input_ids=None, token_type_ids=None, position_ids=None, mask=None, inputs_embeds=None):
+    def forward(self, input_ids=None, token_type_ids=None, position_ids=None, mask=None, inputs_embeds=None, past_key_values_length=0,):
         if input_ids is not None:
             input_shape = input_ids.size()
         else:
@@ -832,7 +842,8 @@ class DebertaV2Embeddings(nn.Module):
         seq_length = input_shape[1]
 
         if position_ids is None:
-            position_ids = self.position_ids[:, :seq_length]
+            # position_ids = self.position_ids[:, :seq_length]
+            position_ids = self.position_ids[:, past_key_values_length : seq_length + past_key_values_length]
 
         if token_type_ids is None:
             token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=self.position_ids.device)
@@ -1027,6 +1038,7 @@ class DebertaV2Model(DebertaV2PreTrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
+        past_key_values=None,
     ):
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -1038,15 +1050,20 @@ class DebertaV2Model(DebertaV2PreTrainedModel):
             raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
         elif input_ids is not None:
             input_shape = input_ids.size()
+            batch_size, seq_length = input_shape
         elif inputs_embeds is not None:
             input_shape = inputs_embeds.size()[:-1]
+            batch_size, seq_length = input_shape
         else:
             raise ValueError("You have to specify either input_ids or inputs_embeds")
 
         device = input_ids.device if input_ids is not None else inputs_embeds.device
 
+        past_key_values_length = past_key_values[0][0].shape[2] if past_key_values is not None else 0
+
         if attention_mask is None:
-            attention_mask = torch.ones(input_shape, device=device)
+            # attention_mask = torch.ones(input_shape, device=device)
+            attention_mask = torch.ones(((batch_size, seq_length + past_key_values_length)), device=device)
         if token_type_ids is None:
             token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
 
@@ -1056,6 +1073,7 @@ class DebertaV2Model(DebertaV2PreTrainedModel):
             position_ids=position_ids,
             mask=attention_mask,
             inputs_embeds=inputs_embeds,
+            past_key_values_length=past_key_values_length, # Ongoing
         )
 
         encoder_outputs = self.encoder(
@@ -1064,6 +1082,7 @@ class DebertaV2Model(DebertaV2PreTrainedModel):
             output_hidden_states=True,
             output_attentions=output_attentions,
             return_dict=return_dict,
+            past_key_values=past_key_values, # Ongoing
         )
         encoded_layers = encoder_outputs[1]
 
@@ -1374,6 +1393,7 @@ class DebertaV2ForTokenClassification(DebertaV2PreTrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
+        past_key_values=None,
     ):
         r"""
         labels (:obj:`torch.LongTensor` of shape :obj:`(batch_size, sequence_length)`, `optional`):

@@ -340,7 +340,7 @@ class Trainer_API:
 def construct_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", type=float, default=5e-5)
-    parser.add_argument('--batch_size', type=int, default=4)
+    parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--task', type=str, choices=['pos', 'chunk', 'ner'], default='ner')
     parser.add_argument('--pre_seq_len', type=int, default=5)
     parser.add_argument('--mid_dim', type=int, default=512)
@@ -349,13 +349,12 @@ def construct_args():
     parser.add_argument('--method', type=str, choices=['prefix', 'finetune'], default='finetune')
     parser.add_argument('--epoch', type=int, default=30)
     parser.add_argument('--dropout', type=float, default=0.1)
-    parser.add_argument('--cuda', type=list, default=[7])
     args = parser.parse_args()
     return args
 
 def main():
     args = construct_args()
-    os.environ["CUDA_VISIBLE_DEVICES"] = ','.join([str(i) for i in args.cuda])
+    os.environ["CUDA_VISIBLE_DEVICES"] = '7'
     train_api = Trainer_API(args)
     result = train_api.train()
     sys.stdout = open('result.txt', 'a')
