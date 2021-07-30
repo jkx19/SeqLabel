@@ -20,7 +20,7 @@ import os
 import argparse
 
 from data.conll_dataset import CoNLL
-from model.prefix import BertForTokenClassification, BertPrefixModel
+from model.prefix import BertForTokenClassification, BertPrefixModel, DeBertaV2PrefixModel
 from trainer import Trainer
 
 
@@ -161,7 +161,7 @@ class Trainer_API:
         if args.model == 'bert':
             self.model_name = f'bert-{args.model_size}-uncased'
         elif args.model == 'deberta':
-            self.model_name = 'microsoft/deberta-xxlarge-v2'
+            self.model_name = 'microsoft/deberta-xlarge-v2'
         raw_data = load_dataset('data/load_dataset.py')
         dataset = CoNLL(self.task, raw_data, self.model_name)
 
@@ -180,22 +180,32 @@ class Trainer_API:
             self.lm_config.hidden_dropout_prob = args.dropout
             self.lm_config.pre_seq_len = args.pre_seq_len
             self.lm_config.mid_dim = args.mid_dim
-            self.model = BertPrefixModel.model_namerom_pretrained(
-                self.model_name,
-                config=self.lm_config,
-                revision='main',
-            )
+            if 'deberta' in self.model_name:
+                self.model = DeBertaV2PrefixModel.from_pretrained(
+                    self.model_name,
+                    config=self.lm_config,
+                    revision='main',
+                )
+            elif 'bert' in self.model_name:
+                self.model = BertPrefixModel.from_pretrained(
+                    self.model_name,
+                    config=self.lm_config,
+                    revision='main',
+                )
+
         elif args.method == 'finetune':
-            # self.model = BertForTokenClassification.from_pretrained(
-            #     self.model_name,
-            #     config=self.lm_config,
-            #     revision='main',
-            # )
-            self.model = DebertaV2ForTokenClassification.from_pretrained(
-                self.model_name,
-                config=self.lm_config,
-                revision='main',
-            )
+            if 'deberta' in self.model_name:
+                self.model = DebertaV2ForTokenClassification.from_pretrained(
+                    self.model_name,
+                    config=self.lm_config,
+                    revision='main',
+                )
+            elif 'bert' in self.model_name:
+                self.model = BertForTokenClassification.from_pretrained(
+                    self.model_name,
+                    config=self.lm_config,
+                    revision='main',
+                )
 
 
         self.train_loader = self.get_data_loader(self.train_dataset)
@@ -340,13 +350,13 @@ class Trainer_API:
 def construct_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", type=float, default=5e-5)
-    parser.add_argument('--batch_size', type=int, default=16)
+    parser.add_argument('--batch_size', type=int, default=4)
     parser.add_argument('--task', type=str, choices=['pos', 'chunk', 'ner'], default='ner')
-    parser.add_argument('--pre_seq_len', type=int, default=5)
+    parser.add_argument('--pre_seq_len', type=int, default=3)
     parser.add_argument('--mid_dim', type=int, default=512)
     parser.add_argument('--model', type=str,choices=['bert', 'deberta'], default='deberta')
     parser.add_argument('--model_size', type=str, choices=['base', 'large'], default='base')
-    parser.add_argument('--method', type=str, choices=['prefix', 'finetune'], default='finetune')
+    parser.add_argument('--method', type=str, choices=['prefix', 'finetune'], default='prefix')
     parser.add_argument('--epoch', type=int, default=30)
     parser.add_argument('--dropout', type=float, default=0.1)
     args = parser.parse_args()

@@ -478,6 +478,9 @@ class DebertaV2Encoder(nn.Module):
                 output_states, att_m = output_states
 
             if i == 0 and self.conv is not None:
+                if past_key_values is not None:
+                    past_key_value_length = past_key_values[0][0].shape[2]
+                    input_mask = input_mask[:, past_key_value_length:].contiguous()
                 output_states = self.conv(hidden_states, output_states, input_mask)
 
             if query_states is not None:
@@ -605,10 +608,15 @@ class DisentangledSelfAttention(nn.Module):
 
         self.dropout = StableDropout(config.attention_probs_dropout_prob)
 
-    def transpose_for_scores(self, x, attention_heads):
+    def transpose_for_scores(self, x, attention_heads, past_key_value=None):
         new_x_shape = x.size()[:-1] + (attention_heads, -1)
         x = x.view(*new_x_shape)
-        return x.permute(0, 2, 1, 3).contiguous().view(-1, x.size(1), x.size(-1))
+        x = x.permute(0, 2, 1, 3)
+        if past_key_value is not None:
+            x = torch.cat([past_key_value, x], dim=2)
+        new_x_shape = x.shape
+        return x.contiguous().view(-1, new_x_shape[2], new_x_shape[-1])
+        # return x.permute(0, 2, 1, 3).contiguous().view(-1, x.size(1), x.size(-1))
 
     def forward(
         self,
@@ -651,9 +659,15 @@ class DisentangledSelfAttention(nn.Module):
         """
         if query_states is None:
             query_states = hidden_states
+        
+        past_key_value_length = past_key_value.shape[3] if past_key_value is not None else 0
+        if past_key_value is not None:
+            key_layer_prefix = self.transpose_for_scores(self.key_proj(hidden_states), self.num_attention_heads, past_key_value=past_key_value[0])
+            # value_layer_prefix = self.transpose_for_scores(self.value_proj(hidden_states), self.num_attention_heads, past_key_value=past_key_value[1])
+        
         query_layer = self.transpose_for_scores(self.query_proj(query_states), self.num_attention_heads)
         key_layer = self.transpose_for_scores(self.key_proj(hidden_states), self.num_attention_heads)
-        value_layer = self.transpose_for_scores(self.value_proj(hidden_states), self.num_attention_heads)
+        value_layer = self.transpose_for_scores(self.value_proj(hidden_states), self.num_attention_heads, past_key_value=past_key_value[1])
 
         rel_att = None
         # Take the dot product between "query" and "key" to get the raw attention scores.
@@ -665,7 +679,9 @@ class DisentangledSelfAttention(nn.Module):
         if "p2p" in self.pos_att_type:
             scale_factor += 1
         scale = math.sqrt(query_layer.size(-1) * scale_factor)
-        attention_scores = torch.bmm(query_layer, key_layer.transpose(-1, -2)) / scale
+        # attention_scores = torch.bmm(query_layer, key_layer.transpose(-1, -2)) / scale
+        attention_scores = torch.bmm(query_layer, key_layer_prefix.transpose(-1, -2)) / scale
+        
         if self.relative_attention:
             rel_embeddings = self.pos_dropout(rel_embeddings)
             rel_att = self.disentangled_attention_bias(
@@ -673,15 +689,24 @@ class DisentangledSelfAttention(nn.Module):
             )
 
         if rel_att is not None:
-            attention_scores = attention_scores + rel_att
+            if past_key_value is not None:
+                att_shape = rel_att.shape[:-1] + (past_key_value_length,)
+                prefix_att = torch.zeros(*att_shape).to(rel_att.device)
+                attention_scores = attention_scores + torch.cat([prefix_att, rel_att], dim=-1)
+            else:
+                attention_scores = attention_scores + rel_att
+        # print(attention_scores.shape)
         attention_scores = attention_scores
         attention_scores = attention_scores.view(
             -1, self.num_attention_heads, attention_scores.size(-2), attention_scores.size(-1)
         )
 
         # bsz x height x length x dimension
+        attention_mask = attention_mask[:,:, past_key_value_length:,:]
+
         attention_probs = XSoftmax.apply(attention_scores, attention_mask, -1)
         attention_probs = self.dropout(attention_probs)
+
         context_layer = torch.bmm(
             attention_probs.view(-1, attention_probs.size(-2), attention_probs.size(-1)), value_layer
         )
@@ -715,7 +740,7 @@ class DisentangledSelfAttention(nn.Module):
         relative_pos = relative_pos.long().to(query_layer.device)
 
         rel_embeddings = rel_embeddings[self.pos_ebd_size - att_span : self.pos_ebd_size + att_span, :].unsqueeze(0)
-        if self.share_att_key:
+        if self.share_att_key: # True
             pos_query_layer = self.transpose_for_scores(
                 self.query_proj(rel_embeddings), self.num_attention_heads
             ).repeat(query_layer.size(0) // self.num_attention_heads, 1, 1)
@@ -1061,6 +1086,7 @@ class DebertaV2Model(DebertaV2PreTrainedModel):
 
         past_key_values_length = past_key_values[0][0].shape[2] if past_key_values is not None else 0
 
+        embedding_mask = torch.ones(input_shape, device=device)
         if attention_mask is None:
             # attention_mask = torch.ones(input_shape, device=device)
             attention_mask = torch.ones(((batch_size, seq_length + past_key_values_length)), device=device)
@@ -1071,7 +1097,8 @@ class DebertaV2Model(DebertaV2PreTrainedModel):
             input_ids=input_ids,
             token_type_ids=token_type_ids,
             position_ids=position_ids,
-            mask=attention_mask,
+            # mask=attention_mask,
+            mask=embedding_mask,
             inputs_embeds=inputs_embeds,
             past_key_values_length=past_key_values_length, # Ongoing
         )
